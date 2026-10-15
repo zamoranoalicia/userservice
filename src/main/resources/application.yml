@@ -2,18 +2,18 @@ spring:
   application:
     name: "UserService"
     datasource:
-      url: jdbc:h2:mem:usersdb
+      url: jdbc:h2:mem:usersdb;DB_CLOSE_DELAY=-1
+      driver-class-name: org.h2.Driver
       username: sa
       password:
-      driver-class-name: org.h2.Driver
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
   h2:
     console:
-      enabled: false
+      enabled: true
   springdoc:
     api-docs:
       path: /api-docs
@@ -31,3 +31,12 @@ security:
   jwt:
     apiKey: 08942409d601fc0398683ffe60cf683f685d547c685ee12aecf602a99338cd5e
     expiration: 3600000 # 1 hour in milliseconds
+
+springdoc:
+  api-docs:
+    enabled: true
+  server-url: ${OPENAPI_SERVER_URL:http://localhost:8080}
+
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
