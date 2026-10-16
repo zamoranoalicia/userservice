@@ -1,0 +1,118 @@
+@startuml C4_Full_Example
+' Example C4 model file showing Context, Container, Component, and Class diagrams
+' Produces 4 pages (use PlantUML/newpage or let PlantUML produce multiple outputs)
+
+' Use the C4 PlantUML library
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+' ------------------
+' Page 1: System Context
+' ------------------
+
+title System Context - UserService
+
+Person(user, "End User", "A user of the application")
+System_Ext(emailService, "Email Service", "Sends verification emails")
+System(userService, "User Service", "Handles registration, authentication and profiles")
+
+Rel(user, userService, "Uses")
+Rel(userService, emailService, "Sends verification emails")
+
+SHOW_LEGEND()
+
+newpage
+
+' ------------------
+' Page 2: Container Diagram
+' ------------------
+
+title Container - UserService
+
+Person(user, "End User")
+System_Boundary(svc, "UserService") {
+  Container(webapp, "UserService API", "Spring Boot", "Provides REST API for user operations")
+  ContainerDb(db, "H2 Database", "Relational DB", "Stores user records and schema migrations via Flyway")
+  Container(swagger, "Swagger UI", "Swagger UI", "Interactive API documentation")
+}
+
+Rel(user, webapp, "Uses HTTP/JSON")
+Rel(webapp, db, "Reads/Writes (JDBC)")
+Rel(webapp, swagger, "Serves API docs")
+
+SHOW_LEGEND()
+
+newpage
+
+' ------------------
+' Page 3: Component Diagram (inside the Webapp container)
+' ------------------
+
+title Component - UserService API
+
+Container(webapp, "UserService API", "Spring Boot", "Provides REST API for user operations")
+
+Component(api, "UserController", "Spring MVC Controller", "Exposes REST endpoints: /api/users, /api/auth")
+Component(service, "UserApplicationService", "Service", "Holds business logic for registration and auth")
+Component(repo, "UserRepository", "Spring Data Repository", "Persists User aggregates")
+Component(jwt, "JwtProvider", "Component", "Creates and validates JWT tokens")
+Component(mailer, "VerificationMailer", "Component", "Sends verification email via external Email Service")
+
+Rel(webapp, api, "Contains")
+Rel(api, service, "Calls")
+Rel(service, repo, "Reads/Writes")
+Rel(service, jwt, "Uses")
+Rel(service, mailer, "Uses")
+Rel(mailer, emailService, "Sends email to")
+
+SHOW_LEGEND()
+
+newpage
+
+' ------------------
+' Page 4: Class Diagram (core domain)
+' ------------------
+
+title Class - Core Domain
+
+class User {
+  +id : Long
+  +username : String
+  +email : String
+  +passwordHash : String
+  +enabled : boolean
+  +roles : List&lt;Role&gt;
+}
+
+class Role {
+  +id : Long
+  +name : String
+}
+
+class UserDto {
+  +username : String
+  +email : String
+}
+
+class UserRepository {
+  +findByUsername(username : String) : Optional&lt;User&gt;
+  +save(user : User) : User
+}
+
+class UserApplicationService {
+  +register(dto : UserDto)
+  +authenticate(username : String, password : String) : JwtToken
+}
+
+class JwtToken {
+  +token : String
+  +expiresAt : Instant
+}
+
+User "1" *-- "*" Role : has
+UserApplicationService o-- UserRepository : uses
+UserApplicationService ..> JwtToken : returns
+UserApplicationService ..> UserDto : uses
+
+@enduml

@@ -1,0 +1,65 @@
+@startuml c4_component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+Person(user, "End User", "A person using the system")
+System_Ext(idp, "Identity Provider", "OAuth/OpenID", "Optional external IdP for social or enterprise login")
+
+Container(apiGateway, "API Gateway / Load Balancer", "NGINX / API Gateway", "Routes requests, TLS termination, rate limiting")
+
+System_Boundary(svc, "UserService") {
+  Container(webapp, "UserService (Spring Boot)", "Java + Spring Boot", "Exposes REST APIs, handles validation, authentication, and business logic")
+  ContainerDb(db, "Primary Database (RDBMS)", "Relational Database", "Stores user records and persistent data")
+  Container(redis, "Redis", "Key-value store", "Session cache, token revocation list, rate-limiter state")
+
+  ' Controllers (HTTP layer)
+  Component(authController, "AuthController", "Spring MVC Controller", "Endpoints: /login, /logout, /refresh - handles auth flows and token lifecycle")
+  Component(userController, "UserController", "Spring MVC Controller", "Endpoints for user CRUD and profile management")
+
+  ' Middleware
+  Component(authFilter, "AuthFilter (Middleware)", "Spring Security Filter", "Validates JWT on incoming requests, populates security context")
+
+  ' Application Services (business logic)
+  Component(authService, "AuthService", "Service", "Orchestrates authentication flows: credential check, token issuance, refresh, revoke")
+  Component(userService, "UserApplicationService", "Service", "Business logic: registration, profile updates, password management")
+  Component(notificationService, "NotificationService", "Service", "Sends email/SMS for verification and alerts")
+  Component(tokenService, "TokenService", "Component", "Issues, refreshes and revokes JWTs; interacts with revocation store")
+
+  ' Repositories / Data access
+  Component(userRepo, "UserRepository", "Spring Data JPA Repository", "CRUD access to users")
+  Component(tokenRepo, "TokenRepository", "Repository", "Persist refresh tokens and audit records")
+  Component(revocationStore, "RevocationStore (Redis)", "Component", "Holds blacklisted/revoked token IDs for fast checks")
+
+  Component(jwtProvider, "JwtProvider", "Component", "Generates and validates JWTs; signs tokens")
+  Component(openapi, "OpenAPI/Swagger", "Component", "API documentation and interactive console")
+}
+
+' External and gateway relationships
+Rel(user, apiGateway, "Uses HTTPS")
+Rel(apiGateway, authFilter, "Forwards requests")
+Rel(apiGateway, authController, "Routes /auth/* requests")
+
+' Request flow inside the service
+Rel(authFilter, userController, "Allows/blocks requests to controllers")
+Rel(authFilter, authController, "Allows/blocks requests to controllers")
+Rel(userController, userService, "Calls")
+Rel(authController, authService, "Calls")
+Rel(authService, userRepo, "Reads/Writes user data")
+Rel(authService, tokenService, "Delegates token operations to")
+Rel(authService, idp, "Delegates external auth (OAuth) to", "OAuth2 / OIDC")
+Rel(tokenService, jwtProvider, "Generates/validates JWTs")
+Rel(tokenService, tokenRepo, "Persists refresh tokens")
+Rel(tokenService, revocationStore, "Writes revoked token IDs / Reads revocation state")
+Rel(userService, userRepo, "Reads/Writes")
+Rel(userService, notificationService, "Sends events to")
+
+Rel(webapp, db, "Reads/Writes (JDBC)")
+Rel(webapp, redis, "Reads/Writes (cache/session)")
+
+' High-level utility links
+Rel(openapi, userController, "Documents")
+
+' External IdP for social login
+Rel(idp, authService, "Provides user identity / tokens")
+
+SHOW_LEGEND()
+@enduml

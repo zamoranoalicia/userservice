@@ -17,6 +17,7 @@ Build & Run
 - Run tests:
   ./gradlew test
 
+
 Configuration (application.yml)
 The main configuration file is at src/main/resources/application.yml. Important sections and examples:
 
@@ -137,6 +138,17 @@ Project layout
 - Services and domain logic: src/main/java/org/azamorano/userService/application
 - Flyway migrations: src/main/resources/db/migration
 - Application configuration: src/main/resources/application.yml
+
+## Architecture diagrams
+
+![System context diagram](./src/main/resources/docs/diagrams/c4_system.svg)
+*Figure: System context (C4 System diagram).* 
+
+![Container diagram](./src/main/resources/docs/diagrams/c4_container.svg)
+*Figure: Container-level architecture (C4 Container diagram).* 
+
+![Component diagram](./docs/diagrams/rendered/component.png)
+*Figure: Component-level architecture (Component diagram).*
 
 ---
 

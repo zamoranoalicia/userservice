@@ -1,0 +1,42 @@
+@startuml c4_class
+' Core domain class diagram for UserService
+
+class User {
+  +id : Long
+  +username : String
+  +email : String
+  +passwordHash : String
+  +roles : List&lt;Role&gt;
+}
+
+class Role {
+  +id : Long
+  +name : String
+}
+
+class UserDto {
+  +username : String
+  +email : String
+}
+
+class UserRepository {
+  +findByUsername(username : String) : Optional&lt;User&gt;
+  +save(user : User) : User
+}
+
+class UserService {
+  +register(dto : UserDto)
+  +authenticate(username : String, password : String) : JwtToken
+}
+
+class JwtToken {
+  +token : String
+  +expiresAt : Instant
+}
+
+User "1" *-- "*" Role : has
+UserService o-- UserRepository : uses
+UserService ..> JwtToken : returns
+UserService ..> UserDto : uses
+
+@enduml
