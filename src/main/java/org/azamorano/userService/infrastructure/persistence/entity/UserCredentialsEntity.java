@@ -7,7 +7,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -15,6 +18,9 @@ import java.util.UUID;
 @Entity
 @Table(name = "user_credentials")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserCredentialsEntity {
 
     @Id

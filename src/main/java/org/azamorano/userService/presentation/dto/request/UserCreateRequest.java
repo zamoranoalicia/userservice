@@ -19,16 +19,13 @@ import java.util.List;
 public class UserCreateRequest {
 
     @NotNull
-    @NotEmpty(message = "name value must not be empty")
     String name;
 
     @NotNull
-    @NotEmpty(message = "email value must not be empty")
     @ValidEmail
     String email;
 
     @NotNull
-    @NotEmpty(message = "password value must not be empty")
     @Password
     String password;
 

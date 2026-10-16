@@ -38,20 +38,30 @@ springdoc:
 
 security:
   jwt:
-    api-key: ${JWT_API_KEY}
+    api-key: 08942409d601fc0398683ffe60cf683f685d547c685ee12aecf602a99338cd5e
     expiration: 3600000
 
 openapi:
   server-url: ${OPENAPI_SERVER_URL:http://localhost:8080}
 
+logging:
+  level:
+    org.springframework.security: DEBUG
+
 config:
   user:
-    domain : 'dominio.cl'
+    domain :
+      value: 'dominio.cl'
+      errorMessage: "El correo electrónico debe pertenecer al dominio 'dominio.cl'."
+    email:
+      errorMessage: "Correo electrónico inválido, por favor verifique e intente nuevamente."
+      duplicateErrorMessage: "El correo electrónico ya está registrado, por favor intente con otro."
   password:
     regex: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$
     errorMessage: |
-      At least one lowercase letter is required.
-      At least one uppercase letter is required.
-      At least one digit is required.
-      At least one special character (@$!%*?&) is required.
-      Minimum length of 8 characters is required.
+      Contraseña inválida, por favor verifique e intente nuevamente.
+      Al menos una letra minúscula es requerida.
+      Al menos una letra mayúscula es requerida.
+      Al menos un dígito es requerido.
+      Al menos un carácter especial (@$!%*?&) es requerido.
+      La longitud mínima de 8 caracteres es requerida.
