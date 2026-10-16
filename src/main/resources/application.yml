@@ -3,7 +3,7 @@ spring:
     name: UserService
 
   datasource:
-    url: jdbc:h2:mem:usersdb;DB_CLOSE_DELAY=-1
+    url: jdbc:h2:mem:usersdb;
     driver-class-name: org.h2.Driver
     username: sa
     password: ""
