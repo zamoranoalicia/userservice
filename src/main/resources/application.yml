@@ -38,8 +38,9 @@ springdoc:
 
 security:
   jwt:
-    api-key: 08942409d601fc0398683ffe60cf683f685d547c685ee12aecf602a99338cd5e
-    expiration: 3600000
+    secret: hDAbZQ2bjKWQ2syuUUf1By6O/08vgnnWxiWEWTQ846XkGkfasZAYT06RhQfYFwW0GmlLUgvUuNbLERIPhAQzzw==
+    accessMinutes: 15
+    refreshDays: 7
 
 openapi:
   server-url: ${OPENAPI_SERVER_URL:http://localhost:8080}

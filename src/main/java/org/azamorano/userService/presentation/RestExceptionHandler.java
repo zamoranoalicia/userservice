@@ -21,6 +21,12 @@ public class RestExceptionHandler {
         return ResponseEntity.status(ex.getStatus()).body(err);
     }
 
+    @ExceptionHandler(org.azamorano.userService.presentation.exception.AuthException.class)
+    public ResponseEntity<ErrorResponse> handleAuthException(org.azamorano.userService.presentation.exception.AuthException ex) {
+        ErrorResponse err = ErrorResponse.builder().message(ex.getMessage()).build();
+        return ResponseEntity.status(ex.getStatus()).body(err);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
         String msg = ex.getBindingResult().getFieldErrors().stream()
