@@ -35,7 +35,8 @@ class AuthServiceTest {
         user.setId(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        AuthService authService = new AuthService(authenticator, tokenProvider, userRepository, sessionService);
+        AuthService authService = new AuthService(authenticator, tokenProvider, userRepository, sessionService,
+                "invalid credentials message", "invalid refresh token message");
 
         LoginRequest loginRequest = LoginRequest.builder().username("jane@example.com").password("P@ssw0rd!123").build();
 
@@ -63,7 +64,8 @@ class AuthServiceTest {
 
         when(authenticator.authenticate("jane@example.com", "wrong")).thenThrow(new org.azamorano.userService.presentation.exception.AuthException("Invalid credentials", org.springframework.http.HttpStatus.UNAUTHORIZED));
 
-        AuthService authService = new AuthService(authenticator, tokenProvider, userRepository, sessionService);
+        AuthService authService = new AuthService(authenticator, tokenProvider, userRepository, sessionService,
+                "invalid credentials message", "invalid refresh token message");
 
         LoginRequest loginRequest = LoginRequest.builder().username("jane@example.com").password("wrong").build();
 

@@ -4,6 +4,7 @@ import org.azamorano.userService.infrastructure.security.CustomUserDetailsServic
 import org.azamorano.userService.presentation.exception.AuthException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +24,7 @@ public class PasswordAuthenticator implements Authenticator {
         try {
             UserDetails user = userDetailsService.loadUserByUsername(username.toLowerCase());
             if (!passwordEncoder.matches(password, user.getPassword())) {
-                throw new AuthException("Invalid credentials", HttpStatus.UNAUTHORIZED);
+                throw new UsernameNotFoundException("Invalid username or password");
             }
             return user;
         } catch (AuthException ae) {

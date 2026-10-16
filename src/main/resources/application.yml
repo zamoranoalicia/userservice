@@ -57,6 +57,9 @@ config:
     email:
       errorMessage: "Correo electrónico inválido, por favor verifique e intente nuevamente."
       duplicateErrorMessage: "El correo electrónico ya está registrado, por favor intente con otro."
+  auth:
+    invalidCredentialsMessage: "Credenciales inválidas, por favor verifique e intente nuevamente."
+    invalidRefreshTokenMessage: "Token de refresco inválido, por favor inicie sesión nuevamente."
   password:
     regex: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$
     errorMessage: |
