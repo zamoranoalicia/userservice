@@ -1,6 +1,5 @@
 package org.azamorano.userService.infrastructure.persistence.repository;
 
-import org.azamorano.userService.infrastructure.persistence.entity.UserCredentialEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

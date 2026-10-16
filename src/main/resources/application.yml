@@ -43,3 +43,15 @@ security:
 
 openapi:
   server-url: ${OPENAPI_SERVER_URL:http://localhost:8080}
+
+config:
+  user:
+    domain : 'dominio.cl'
+  password:
+    regex: ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$
+    errorMessage: |
+      At least one lowercase letter is required.
+      At least one uppercase letter is required.
+      At least one digit is required.
+      At least one special character (@$!%*?&) is required.
+      Minimum length of 8 characters is required.
