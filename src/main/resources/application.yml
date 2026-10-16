@@ -1,42 +1,45 @@
 spring:
   application:
-    name: "UserService"
-    datasource:
-      url: jdbc:h2:mem:usersdb;DB_CLOSE_DELAY=-1
-      driver-class-name: org.h2.Driver
-      username: sa
-      password:
+    name: UserService
+
+  datasource:
+    url: jdbc:h2:mem:usersdb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: validate
     show-sql: true
+
   h2:
     console:
       enabled: true
-  springdoc:
-    api-docs:
-      path: /api-docs
-    swagger-ui:
-      operationsSorter: method
-  security:
-    user:
-      name: admin
-      password: password
+
   flyway:
     enabled: true
     locations: classpath:db/migration
 
-security:
-  jwt:
-    apiKey: 08942409d601fc0398683ffe60cf683f685d547c685ee12aecf602a99338cd5e
-    expiration: 3600000 # 1 hour in milliseconds
+  security:
+    user:
+      name: admin
+      password: password
 
 springdoc:
   api-docs:
+    path: /api-docs
     enabled: true
-  server-url: ${OPENAPI_SERVER_URL:http://localhost:8080}
-
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
+    operations-sorter: method
+
+security:
+  jwt:
+    api-key: ${JWT_API_KEY}
+    expiration: 3600000
+
+openapi:
+  server-url: ${OPENAPI_SERVER_URL:http://localhost:8080}

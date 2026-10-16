@@ -1,4 +1,4 @@
-package infrastructure.persistence.entity;
+package org.azamorano.userService.infrastructure.persistence.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

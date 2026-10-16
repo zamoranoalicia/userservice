@@ -1,4 +1,4 @@
-package infrastructure.config;
+package org.azamorano.userService.infrastructure.config;
 
 
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;

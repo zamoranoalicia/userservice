@@ -1,4 +1,4 @@
-package infrastructure.security.config;
+package org.azamorano.userService.infrastructure.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
