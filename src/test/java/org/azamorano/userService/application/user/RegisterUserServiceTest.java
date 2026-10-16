@@ -1,8 +1,10 @@
 package org.azamorano.userService.application.user;
 
+import org.azamorano.userService.application.auth.SessionService;
 import org.azamorano.userService.infrastructure.persistence.entity.UserEntity;
 import org.azamorano.userService.infrastructure.persistence.repository.UserCredentialsRepository;
 import org.azamorano.userService.infrastructure.persistence.repository.UserRepository;
+import org.azamorano.userService.infrastructure.security.JwtService;
 import org.azamorano.userService.presentation.dto.request.UserCreateRequest;
 import org.azamorano.userService.presentation.dto.request.PhoneRequest;
 import org.azamorano.userService.presentation.dto.response.UserResponse;
@@ -26,7 +28,13 @@ class RegisterUserServiceTest {
         when(passwordEncoder.encode(anyString())).thenReturn("hashed");
         when(userRepo.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        RegisterUserService svc = new RegisterUserService(userRepo, credRepo, passwordEncoder, "Duplicated email");
+        JwtService jwtService = mock(JwtService.class);
+        SessionService sessionService = mock(SessionService.class);
+        when(jwtService.generateAccessToken(any(), anyString())).thenReturn("access-token");
+        when(jwtService.generateRefreshToken(any())).thenReturn("refresh-token");
+        when(jwtService.parseClaims("refresh-token")).thenReturn(io.jsonwebtoken.Jwts.claims());
+
+        RegisterUserService svc = new RegisterUserService(userRepo, credRepo, passwordEncoder, "Duplicated email", jwtService, sessionService);
 
         UserCreateRequest req = UserCreateRequest.builder()
                 .name("Jane Doe")
@@ -42,9 +50,11 @@ class RegisterUserServiceTest {
         assertEquals("jane@example.com", resp.getEmail());
         assertNotNull(resp.getCreatedAt());
         assertEquals(1, resp.getPhones().size());
+        assertEquals("access-token", resp.getToken());
 
         verify(userRepo).findByEmail("jane@example.com");
         verify(userRepo).save(any(UserEntity.class));
+        verify(sessionService).createSession(any(), eq("refresh-token"), any());
     }
 
     @Test
@@ -55,8 +65,14 @@ class RegisterUserServiceTest {
 
         when(userRepo.findByEmail("jane@example.com")).thenReturn(Optional.of(new UserEntity()));
 
+        JwtService jwtService = mock(JwtService.class);
+        SessionService sessionService = mock(SessionService.class);
+        when(jwtService.generateAccessToken(any(), anyString())).thenReturn("access-token");
+        when(jwtService.generateRefreshToken(any())).thenReturn("refresh-token");
+        when(jwtService.parseClaims("refresh-token")).thenReturn(io.jsonwebtoken.Jwts.claims());
+
         RegisterUserService svc = new RegisterUserService(userRepo, credRepo, passwordEncoder,
-                "El correo ya ha sido registrado");
+                "El correo ya ha sido registrado", jwtService, sessionService);
 
         UserCreateRequest req = UserCreateRequest.builder()
                 .name("Jane Doe")

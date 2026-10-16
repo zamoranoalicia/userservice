@@ -4,6 +4,7 @@ import org.azamorano.userService.application.auth.AuthService;
 import org.azamorano.userService.presentation.dto.request.LoginRequest;
 import org.azamorano.userService.presentation.dto.response.AuthResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,7 +24,7 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PostMapping("/login")
+    @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse resp = authService.authenticate(request);
         return ResponseEntity.ok(resp);

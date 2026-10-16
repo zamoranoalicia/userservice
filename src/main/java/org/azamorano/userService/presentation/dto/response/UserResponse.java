@@ -16,6 +16,7 @@ public class UserResponse {
     private OffsetDateTime createdAt;
     private OffsetDateTime modifiedAt;
     private OffsetDateTime lastLoginAt;
+    private String token; // access token
     private Boolean isActive;
     private List<PhoneResponse> phones;
 }

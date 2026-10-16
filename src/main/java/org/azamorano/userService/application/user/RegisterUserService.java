@@ -17,6 +17,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.jsonwebtoken.Claims;
+import org.azamorano.userService.infrastructure.security.JwtService;
+import org.azamorano.userService.application.auth.SessionService;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -30,14 +34,20 @@ public class RegisterUserService {
     private final UserCredentialsRepository credentialRepository;
     private final PasswordEncoder passwordEncoder;
     private final String duplicateEmailErrorMessage;
+    private final JwtService jwtService;
+    private final SessionService sessionService;
 
     public RegisterUserService(UserRepository userRepository, UserCredentialsRepository credentialRepository,
                                PasswordEncoder passwordEncoder,
-                               @Value("${config.user.email.duplicateErrorMessage}") String duplicateEmailErrorMessage) {
+                               @Value("${config.user.email.duplicateErrorMessage}") String duplicateEmailErrorMessage,
+                               JwtService jwtService,
+                               SessionService sessionService) {
         this.userRepository = userRepository;
         this.credentialRepository = credentialRepository;
         this.passwordEncoder = passwordEncoder;
         this.duplicateEmailErrorMessage = duplicateEmailErrorMessage;
+        this.jwtService = jwtService;
+        this.sessionService = sessionService;
     }
 
     @Transactional
@@ -58,13 +68,22 @@ public class RegisterUserService {
 
         UserEntity savedUser = userRepository.save(user);
 
+        String accessToken = jwtService.generateAccessToken(savedUser.getId(), savedUser.getEmail());
+        String refreshToken = jwtService.generateRefreshToken(savedUser.getId());
+        try {
+            Claims claims = jwtService.parseClaims(refreshToken);
+            sessionService.createSession(savedUser, refreshToken, claims);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create user session", e);
+        }
+
         List<PhoneResponse> phoneResponses = savedUser.getPhones().stream().map(ph ->
                 new PhoneResponse(ph.getNumber(), ph.getCityCode(), ph.getCountryCode())
         ).collect(Collectors.toList());
 
         return new UserResponse(savedUser.getId(), savedUser.getName(), savedUser.getEmail(),
                 savedUser.getCreatedAt(), savedUser.getModifiedAt(), savedUser.getLastLoginAt(),
-                savedUser.getIsActive(), phoneResponses);
+                accessToken, savedUser.getIsActive(), phoneResponses);
     }
 
     private UserEntity buildUserFromRequest(UserCreateRequest request, OffsetDateTime now) {
