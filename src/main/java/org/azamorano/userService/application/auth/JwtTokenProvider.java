@@ -24,6 +24,6 @@ public class JwtTokenProvider implements TokenProvider {
 
     @Override
     public Claims parseClaims(String token) {
-        return jwtService.parseClaims(token);
+        return jwtService.parseRefreshToken(token);
     }
 }

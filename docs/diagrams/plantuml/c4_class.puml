@@ -1,42 +1,207 @@
 @startuml c4_class
-' Core domain class diagram for UserService
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
 
-class User {
-  +id : Long
-  +username : String
-  +email : String
-  +passwordHash : String
-  +roles : List&lt;Role&gt;
+' ========== Presentation layer ==========
+class UserController {
+  +create(request: UserCreateRequest): ResponseEntity<UserResponse>
 }
 
-class Role {
-  +id : Long
-  +name : String
+class AuthController {
+  +login(request: LoginRequest): ResponseEntity<AuthResponse>
 }
 
-class UserDto {
-  +username : String
-  +email : String
+class UserCreateRequest {
+  +name: String
+  +email: String
+  +password: String
+  +phones: List<PhoneRequest>
 }
 
+class LoginRequest {
+  +email: String
+  +password: String
+}
+
+class UserResponse {
+  +id: UUID
+  +name: String
+  +email: String
+  +createdAt: OffsetDateTime
+  +modifiedAt: OffsetDateTime
+  +lastLoginAt: OffsetDateTime
+  +accessToken: String
+  +isActive: Boolean
+  +phones: List<PhoneResponse>
+}
+
+class AuthResponse {
+  +accessToken: String
+  +refreshToken: String
+  +tokenType: String
+}
+
+' ========== Application layer ==========
+class RegisterUserService {
+  +createUser(request: UserCreateRequest): UserResponse
+}
+
+class AuthService {
+  +authenticate(request: LoginRequest): AuthResponse
+}
+
+interface Authenticator {
+  +authenticate(username: String, password: String): UserDetails
+}
+
+class PasswordAuthenticator implements Authenticator {
+  +authenticate(username: String, password: String): UserDetails
+}
+
+interface TokenProvider {
+  +generateTokens(userId: UUID, email: String): AuthTokens
+  +parseClaims(token: String): Claims
+}
+
+class JwtTokenProvider implements TokenProvider {
+  +generateTokens(userId: UUID, email: String): AuthTokens
+  +parseClaims(token: String): Claims
+}
+
+class SessionService {
+  +createSession(user: UserEntity, refreshToken: String, claims: Claims): UserSessionEntity
+}
+
+class JwtService {
+  +generateAccessToken(userId: UUID, email: String): String
+  +generateRefreshToken(userId: UUID): String
+  +parseClaims(token: String): Claims
+}
+
+' ========== Security / infrastructure ==========
+class SecurityConfiguration {
+  +passwordEncoder(): PasswordEncoder
+  +securityFilterChain(http: HttpSecurity): SecurityFilterChain
+}
+
+class CustomUserDetailsService {
+  +loadUserByUsername(email: String): UserDetails
+}
+
+class CustomUserDetails implements UserDetails {
+  +userId: UUID
+  +email: String
+  +password: String
+  +enabled: Boolean
+}
+
+class PasswordEncoder <<Spring Bean>>
+
+' ========== Persistence layer ==========
 class UserRepository {
-  +findByUsername(username : String) : Optional&lt;User&gt;
-  +save(user : User) : User
+  +findByEmail(email: String): Optional<UserEntity>
+  +findById(id: UUID): Optional<UserEntity>
+  +save(user: UserEntity): UserEntity
 }
 
-class UserService {
-  +register(dto : UserDto)
-  +authenticate(username : String, password : String) : JwtToken
+class UserCredentialsRepository {
+  +findById(userId: UUID): Optional<UserCredentialsEntity>
+  +save(entity: UserCredentialsEntity): UserCredentialsEntity
 }
 
-class JwtToken {
-  +token : String
-  +expiresAt : Instant
+class UserSessionRepository {
+  +save(session: UserSessionEntity): UserSessionEntity
 }
 
-User "1" *-- "*" Role : has
-UserService o-- UserRepository : uses
-UserService ..> JwtToken : returns
-UserService ..> UserDto : uses
+class PhoneRepository {
+  +save(phone: PhoneEntity): PhoneEntity
+}
+
+class UserEntity {
+  +id: UUID
+  +name: String
+  +email: String
+  +createdAt: OffsetDateTime
+  +modifiedAt: OffsetDateTime
+  +lastLoginAt: OffsetDateTime
+  +isActive: Boolean
+  +phones: List<PhoneEntity>
+  +credentials: UserCredentialsEntity
+  +sessions: List<UserSessionEntity>
+}
+
+class UserCredentialsEntity {
+  +userId: UUID
+  +user: UserEntity
+  +passwordHash: String
+  +credentialUpdatedAt: OffsetDateTime
+}
+
+class UserSessionEntity {
+  +id: UUID
+  +user: UserEntity
+  +tokenId: String
+  +tokenHash: String
+  +createdAt: OffsetDateTime
+  +expiresAt: OffsetDateTime
+  +revokedAt: OffsetDateTime
+}
+
+class PhoneEntity {
+  +phoneId: UUID
+  +user: UserEntity
+  +number: String
+  +cityCode: String
+  +countryCode: String
+}
+
+class AuthTokens {
+  +accessToken: String
+  +refreshToken: String
+}
+
+' ========== Relationships ==========
+UserController --> RegisterUserService
+AuthController --> AuthService
+
+RegisterUserService --> UserRepository
+RegisterUserService --> UserCredentialsRepository
+RegisterUserService --> JwtService
+RegisterUserService --> SessionService
+RegisterUserService --> UserEntity
+RegisterUserService --> UserCredentialsEntity
+RegisterUserService --> PhoneEntity
+RegisterUserService --> UserResponse
+
+AuthService --> Authenticator
+AuthService --> TokenProvider
+AuthService --> UserRepository
+AuthService --> SessionService
+AuthService --> AuthResponse
+
+PasswordAuthenticator --> CustomUserDetailsService
+PasswordAuthenticator --> PasswordEncoder
+PasswordAuthenticator ..|> Authenticator
+
+JwtTokenProvider --> JwtService
+JwtTokenProvider ..|> TokenProvider
+JwtTokenProvider --> AuthTokens
+
+SessionService --> UserSessionRepository
+SessionService --> UserSessionEntity
+
+CustomUserDetailsService --> UserRepository
+CustomUserDetailsService --> UserCredentialsRepository
+CustomUserDetailsService --> CustomUserDetails
+
+UserEntity "1" *-- "0..*" PhoneEntity
+UserEntity "1" *-- "1" UserCredentialsEntity
+UserEntity "1" *-- "0..*" UserSessionEntity
+
+UserController --> UserCreateRequest
+AuthController --> LoginRequest
+
+SecurityConfiguration --> PasswordEncoder
 
 @enduml
+

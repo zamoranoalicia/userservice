@@ -1,25 +1,25 @@
 package org.azamorano.userService.application.user;
 
+import io.jsonwebtoken.Claims;
+import org.azamorano.userService.application.auth.SessionService;
 import org.azamorano.userService.infrastructure.persistence.entity.PhoneEntity;
 import org.azamorano.userService.infrastructure.persistence.entity.UserCredentialsEntity;
 import org.azamorano.userService.infrastructure.persistence.entity.UserEntity;
 import org.azamorano.userService.infrastructure.persistence.repository.UserCredentialsRepository;
 import org.azamorano.userService.infrastructure.persistence.repository.UserRepository;
+import org.azamorano.userService.infrastructure.security.JwtService;
 import org.azamorano.userService.presentation.dto.request.PhoneRequest;
 import org.azamorano.userService.presentation.dto.request.UserCreateRequest;
+import org.azamorano.userService.presentation.dto.request.UserUpdateRequest;
 import org.azamorano.userService.presentation.dto.response.PhoneResponse;
 import org.azamorano.userService.presentation.dto.response.UserResponse;
+import org.azamorano.userService.presentation.exception.AuthException;
 import org.azamorano.userService.presentation.exception.UserCreationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import io.jsonwebtoken.Claims;
-import org.azamorano.userService.infrastructure.security.JwtService;
-import org.azamorano.userService.application.auth.SessionService;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -27,7 +27,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class RegisterUserService {
+public class UserService {
 
 
     private final UserRepository userRepository;
@@ -37,11 +37,11 @@ public class RegisterUserService {
     private final JwtService jwtService;
     private final SessionService sessionService;
 
-    public RegisterUserService(UserRepository userRepository, UserCredentialsRepository credentialRepository,
-                               PasswordEncoder passwordEncoder,
-                               @Value("${config.user.email.duplicateErrorMessage}") String duplicateEmailErrorMessage,
-                               JwtService jwtService,
-                               SessionService sessionService) {
+    public UserService(UserRepository userRepository, UserCredentialsRepository credentialRepository,
+                       PasswordEncoder passwordEncoder,
+                       @Value("${config.user.email.duplicateErrorMessage}") String duplicateEmailErrorMessage,
+                       JwtService jwtService,
+                       SessionService sessionService) {
         this.userRepository = userRepository;
         this.credentialRepository = credentialRepository;
         this.passwordEncoder = passwordEncoder;
@@ -71,7 +71,7 @@ public class RegisterUserService {
         String accessToken = jwtService.generateAccessToken(savedUser.getId(), savedUser.getEmail());
         String refreshToken = jwtService.generateRefreshToken(savedUser.getId());
         try {
-            Claims claims = jwtService.parseClaims(refreshToken);
+            Claims claims = jwtService.parseRefreshToken(refreshToken);
             sessionService.createSession(savedUser, refreshToken, claims);
         } catch (Exception e) {
             throw new RuntimeException("Failed to create user session", e);
@@ -85,6 +85,54 @@ public class RegisterUserService {
                 savedUser.getCreatedAt(), savedUser.getModifiedAt(), savedUser.getLastLoginAt(),
                 accessToken, savedUser.getIsActive(), phoneResponses);
     }
+
+    @Transactional
+    public UserResponse updateUser(UUID userId, UserUpdateRequest request) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException("User not found", HttpStatus.NOT_FOUND));
+
+        if (request == null) {
+            throw new AuthException("Request body is required", HttpStatus.BAD_REQUEST);
+        }
+
+        boolean hasChanges = false;
+
+        if (request.getName() != null && !request.getName().isBlank()) {
+            user.setName(request.getName().trim());
+            hasChanges = true;
+        }
+
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            String normalizedEmail = request.getEmail().trim().toLowerCase();
+            if (!normalizedEmail.equals(user.getEmail())) {
+                userRepository.findByEmail(normalizedEmail)
+                        .ifPresent(existingUser -> {
+                            if (!existingUser.getId().equals(userId)) {
+                                throw new UserCreationException(duplicateEmailErrorMessage, HttpStatus.CONFLICT);
+                            }
+                        });
+                user.setEmail(normalizedEmail);
+                hasChanges = true;
+            }
+        }
+
+        if (request.getPhones() != null) {
+            List<PhoneEntity> phones = buildPhones(request.getPhones(), user);
+            user.getPhones().clear();
+            user.getPhones().addAll(phones);
+            hasChanges = true;
+        }
+
+        if (!hasChanges) {
+            throw new AuthException("At least one field must be provided for update", HttpStatus.BAD_REQUEST);
+        }
+
+        user.setModifiedAt(OffsetDateTime.now());
+        UserEntity savedUser = userRepository.save(user);
+
+        return toUserResponse(savedUser);
+    }
+
 
     private UserEntity buildUserFromRequest(UserCreateRequest request, OffsetDateTime now) {
         return UserEntity.builder()
@@ -124,5 +172,41 @@ public class RegisterUserService {
                 .passwordHash(passwordEncoder.encode(password))
                 .credentialUpdatedAt(now)
                 .build();
+    }
+
+    private UserResponse toUserResponse(UserEntity user) {
+        List<PhoneResponse> phoneResponses = user.getPhones().stream()
+                .map(phone -> new PhoneResponse(phone.getNumber(), phone.getCityCode(), phone.getCountryCode()))
+                .collect(Collectors.toList());
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .phones(phoneResponses)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUser(UUID userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException(
+                        "User not found",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        return toUserResponse(user);
+    }
+
+    @Transactional
+    public void deleteUser(UUID userId) {
+        UserEntity user = userRepository.findById(userId)
+                .filter(UserEntity::getIsActive)
+                .orElseThrow(() -> new AuthException(
+                        "User not found",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        userRepository.delete(user);
     }
 }

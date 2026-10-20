@@ -150,6 +150,9 @@ Project layout
 ![Component diagram](./docs/diagrams/rendered/component.png)
 *Figure: Component-level architecture (Component diagram).*
 
+![Component diagram](./src/main/resources/docs/diagrams/c4_class.png)
+*Figure: Class-level architecture (Class diagram).*
+
 ---
 
 Español
